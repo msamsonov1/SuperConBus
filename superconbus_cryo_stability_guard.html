@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperConBus: HTS Power Link Cryo-Stability Guard</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- MathJax Configuration -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #03050a;
+      color: #e2e8f0;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .formula-box {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080c14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+    .glow-cyan {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+    .glow-rose {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.45);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+    }
+    /* Grid background effect */
+    .bg-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="bg-[#03050a] text-slate-100 min-h-screen flex flex-col antialiased bg-grid">
+
+  <!-- Header & Global Navigation -->
+  <header class="border-b border-gray-800/80 bg-[#060913]/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Mission Badge -->
+      <div class="flex items-center space-x-3">
+        <div class="p-2 rounded-lg bg-cyan-950/70 border border-cyan-500/40 text-cyan-400">
+          <i data-lucide="zap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg tracking-wider text-white">SuperCon<span class="text-cyan-400">Bus</span></span>
+            <span class="mono text-xs px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-700/60 text-cyan-300 font-semibold">NASA SBIR T4.02</span>
+          </div>
+          <p class="text-xs text-gray-400 hidden sm:block">HTS Power Link Cryo-Stability & Quench Guard | Deep-Space NEP</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center space-x-1 sm:space-x-2 bg-gray-950/80 p-1 rounded-xl border border-gray-800">
+        <button id="tabBtnSim" onclick="switchTab('sim')" class="flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+          <i data-lucide="activity" class="w-4 h-4"></i>
+          <span>Live Telemetry</span>
+        </button>
+        <button id="tabBtnPhysics" onclick="switchTab('physics')" class="flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-gray-400 hover:text-gray-200">
+          <i data-lucide="atom" class="w-4 h-4"></i>
+          <span>Core Physics</span>
+        </button>
+        <button id="tabBtnProposal" onclick="switchTab('proposal')" class="flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-gray-400 hover:text-gray-200">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span>NASA Proposal</span>
+        </button>
+        <button id="tabBtnARR" onclick="switchTab('arr')" class="flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-gray-400 hover:text-gray-200">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>Commercial ARR</span>
+        </button>
+      </nav>
+
+      <!-- System Health Indicator -->
+      <div class="hidden lg:flex items-center space-x-3 mono text-xs bg-gray-900/60 px-3 py-1.5 rounded-lg border border-gray-800">
+        <div class="flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-gray-400">BUS-1:</span>
+          <span id="globalStateBadge" class="text-emerald-400 font-semibold">SUPERCONDUCTING</span>
+        </div>
+        <span class="text-gray-700">|</span>
+        <div>
+          <span class="text-gray-400">T_peak:</span>
+          <span id="globalTBadge" class="text-cyan-400">42.4 K</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: LIVE SIMULATION & TELEMETRY HUD      -->
+    <!-- ========================================== -->
+    <div id="viewSim" class="space-y-6">
+
+      <!-- Top Row: Operational Overview Banner -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl backdrop-blur">
+          <div class="text-xs text-gray-400 mono">BUS OPERATING CURRENT ($I_{\text{bus}}$)</div>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="hudCurrent" class="text-2xl font-bold mono text-white">4,200</span>
+            <span class="text-xs text-cyan-400 font-semibold mono">Amperes DC</span>
+          </div>
+          <div class="text-[11px] text-gray-500 mt-1">Reactor $\to$ 100 kW Magnetoplasmadynamic Thruster</div>
+        </div>
+
+        <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl backdrop-blur">
+          <div class="text-xs text-gray-400 mono">PEAK LOCAL B-FIELD ($B_{\text{local}}$)</div>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="hudBField" class="text-2xl font-bold mono text-amber-400">3.48</span>
+            <span class="text-xs text-amber-400/80 font-semibold mono">Tesla (Self+Ext)</span>
+          </div>
+          <div class="text-[11px] text-gray-500 mt-1">Hall sensor array sector S-04</div>
+        </div>
+
+        <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl backdrop-blur">
+          <div class="text-xs text-gray-400 mono">CRITICAL CURRENT MARGIN ($\Delta I_{\text{crit}}$)</div>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="hudMargin" class="text-2xl font-bold mono text-emerald-400">+1,420</span>
+            <span class="text-xs text-emerald-400/80 font-semibold mono">A to quench</span>
+          </div>
+          <div class="text-[11px] text-gray-500 mt-1">REBCO tape envelope boundary</div>
+        </div>
+
+        <div class="bg-gray-900/60 border border-gray-800 p-3 rounded-xl backdrop-blur">
+          <div class="text-xs text-gray-400 mono">SHUNT STATUS (CRYO-COPPER)</div>
+          <div class="flex items-baseline space-x-2 mt-1">
+            <span id="hudShuntPercent" class="text-2xl font-bold mono text-cyan-400">0.0%</span>
+            <span id="hudShuntState" class="text-xs px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 mono border border-emerald-800/80">STANDBY</span>
+          </div>
+          <div class="text-[11px] text-gray-500 mt-1">Solid-state GaN bypass gate array</div>
+        </div>
+      </div>
+
+      <!-- Main Canvas & Phase Space Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Physical Busbar Dynamic Cross-Section & Sensor Grid (7 cols) -->
+        <div class="lg:col-span-7 bg-gray-900/50 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between backdrop-blur">
+          <div class="flex flex-wrap items-center justify-between pb-3 border-b border-gray-800/80 gap-2">
+            <div>
+              <h2 class="font-semibold text-white flex items-center space-x-2 text-sm sm:text-base">
+                <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+                <span>HTS Power Link: Vacuum Cryostat Segment #4</span>
+              </h2>
+              <p class="text-xs text-gray-400">Distributed FBG optical temperature line & 16-channel Hall probe array</p>
+            </div>
+            <div class="flex items-center space-x-2 text-xs mono">
+              <span class="inline-flex items-center px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 mr-1.5"></span>
+                REBCO 2G Tape
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-950 border border-amber-800 text-amber-300">
+                Cryo-Cu Stabilizer
+              </span>
+            </div>
+          </div>
+
+          <!-- The Hardware Canvas -->
+          <div class="relative w-full my-3 bg-[#020409] rounded-xl border border-gray-900 overflow-hidden flex items-center justify-center min-h-[280px]">
+            <canvas id="busCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+            <div id="canvasAlertOverlay" class="absolute top-3 right-3 hidden pointer-events-none">
+              <div class="px-3 py-1.5 rounded-lg bg-rose-950/90 border border-rose-600 text-rose-300 mono text-xs flex items-center space-x-2 glow-rose animate-pulse">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                <span id="canvasAlertMsg">HOTSPOT DETECTED (SEC-09)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sensor Ribbon Real-time Heat Strip -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center text-xs mono text-gray-400">
+              <span>Fiber Bragg Grating (FBG) Spatial Thermal Profile (4.0m Length)</span>
+              <span id="fbgMaxDisp" class="text-cyan-400">Peak: 42.4 K @ x = 2.15m</span>
+            </div>
+            <div class="h-4 w-full bg-gray-950 rounded border border-gray-800 flex overflow-hidden p-0.5 gap-0.5" id="heatStrip">
+              <!-- Dynamically populated via JS -->
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-500 mono">
+              <span>0.0m (Reactor Bay)</span>
+              <span>1.0m</span>
+              <span>2.0m (Umbilical Bend)</span>
+              <span>3.0m</span>
+              <span>4.0m (Propulsion Pod)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Critical Envelope Phase-Space Scatter Chart (5 cols) -->
+        <div class="lg:col-span-5 bg-gray-900/50 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between backdrop-blur">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-800/80">
+            <div>
+              <h2 class="font-semibold text-white flex items-center space-x-2 text-sm sm:text-base">
+                <i data-lucide="compass" class="w-4 h-4 text-cyan-400"></i>
+                <span>$(T, B)$ Phase-Space Critical Envelope</span>
+              </h2>
+              <p class="text-xs text-gray-400">Superconducting State vs Normal Quench Boundary</p>
+            </div>
+            <span class="mono text-[10px] px-2 py-0.5 rounded bg-gray-800 text-gray-300">Jc(T,B) Surface</span>
+          </div>
+
+          <div class="relative w-full h-[260px] my-2">
+            <canvas id="phaseChart"></canvas>
+          </div>
+
+          <div class="bg-gray-950/70 p-2.5 rounded-xl border border-gray-800 text-xs text-gray-300 space-y-1">
+            <div class="flex justify-between mono">
+              <span class="text-gray-400">Current Margin Distance $d_{\text{crit}}$:</span>
+              <span id="marginDistanceVal" class="text-cyan-400 font-bold">12.8 K-T</span>
+            </div>
+            <div class="flex justify-between mono">
+              <span class="text-gray-400">Safe Operating Envelope:</span>
+              <span class="text-emerald-400 font-semibold">$T < T_c(B)$ &amp; $B < B_{c2}(T)$</span>
+            </div>
+            <p class="text-[11px] text-gray-500">Autonomous shunt engages when hotspot trajectory crosses the warning buffer corridor ($\Delta_{\text{guard}} = 15\%$).</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Controls & Real-Time Dynamic Metric Strips -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Closed-Loop Control Deck (5 cols) -->
+        <div class="lg:col-span-5 bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-white flex items-center space-x-2 text-sm sm:text-base">
+                <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+                <span>Closed-Loop Controller &amp; Disturbance Injection</span>
+              </h3>
+              <button onclick="resetNominal()" class="text-xs mono text-cyan-400 hover:text-cyan-300 underline">Reset Nominal</button>
+            </div>
+            <p class="text-xs text-gray-400">
+              Modulate reactor load and cryocooler mass-flow or simulate micrometeorite vacuum breaches.
+            </p>
+          </div>
+
+          <!-- Slider 1: Busbar Current -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs mono">
+              <span class="text-gray-300">Reactor Primary Current $I_{\text{bus}}$:</span>
+              <span id="sliderCurrentVal" class="text-cyan-400 font-bold">4,200 A</span>
+            </div>
+            <input id="sliderCurrent" type="range" min="1500" max="6500" step="50" value="4200" 
+              class="w-full accent-cyan-400 h-1.5 bg-gray-800 rounded-lg cursor-pointer" oninput="updateSimulationParams()">
+            <div class="flex justify-between text-[10px] text-gray-500 mono">
+              <span>1,500 A (Idle)</span>
+              <span>4,200 A (Rated)</span>
+              <span>6,500 A (Overdrive)</span>
+            </div>
+          </div>
+
+          <!-- Slider 2: External Stray Magnetic Field -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs mono">
+              <span class="text-gray-300">Thruster Stray Field $B_{\text{ext}}$:</span>
+              <span id="sliderBVal" class="text-amber-400 font-bold">1.20 T</span>
+            </div>
+            <input id="sliderB" type="range" min="0.0" max="4.0" step="0.05" value="1.2" 
+              class="w-full accent-amber-400 h-1.5 bg-gray-800 rounded-lg cursor-pointer" oninput="updateSimulationParams()">
+            <div class="flex justify-between text-[10px] text-gray-500 mono">
+              <span>0.0 T (Shielded)</span>
+              <span>2.0 T (Gimbal Leakage)</span>
+              <span>4.0 T (Severe Flux Spike)</span>
+            </div>
+          </div>
+
+          <!-- Slider 3: Cryo Baseline Temperature -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs mono">
+              <span class="text-gray-300">Cryocooler Sub-Cooling Temp $T_{\text{in}}$:</span>
+              <span id="sliderTVal" class="text-cyan-300 font-bold">35.0 K</span>
+            </div>
+            <input id="sliderT" type="range" min="20.0" max="75.0" step="0.5" value="35.0" 
+              class="w-full accent-cyan-300 h-1.5 bg-gray-800 rounded-lg cursor-pointer" oninput="updateSimulationParams()">
+            <div class="flex justify-between text-[10px] text-gray-500 mono">
+              <span>20 K (Sub-cooled He)</span>
+              <span>45 K (Nominal Ne)</span>
+              <span>75 K (Cryocooler Degradation)</span>
+            </div>
+          </div>
+
+          <!-- Fault Injection Action Buttons -->
+          <div class="pt-3 border-t border-gray-800/80 space-y-2">
+            <span class="text-xs font-medium text-gray-300 block">Inject Transient Disturbances:</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnFluxJump" onclick="injectDisturbance('flux_jump')" 
+                class="px-3 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 border border-amber-700/60 text-amber-300 text-xs mono font-medium transition flex items-center justify-center space-x-1.5">
+                <i data-lucide="zap-off" class="w-3.5 h-3.5"></i>
+                <span>Inject Flux Jump</span>
+              </button>
+              <button id="btnThermalBreach" onclick="injectDisturbance('thermal_leak')" 
+                class="px-3 py-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-700/60 text-rose-300 text-xs mono font-medium transition flex items-center justify-center space-x-1.5">
+                <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                <span>Vacuum Jacket Leak</span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <label class="flex items-center space-x-2 cursor-pointer text-xs text-gray-300">
+                <input id="autoGuardToggle" type="checkbox" checked class="w-4 h-4 rounded accent-cyan-500 bg-gray-900 border-gray-700">
+                <span class="font-medium">Enable Autonomous Guard (GaN Shunt)</span>
+              </label>
+              <span id="shuntActiveIndicator" class="mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
+                AUTO SHUNT ARMED
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Secondary Diagnostic Time Series Charts (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          <!-- Time-Series Chart 1: Hotspot Temp & Critical Temperature Limit -->
+          <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 backdrop-blur">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-white mono flex items-center space-x-1.5">
+                <i data-lucide="thermometer-snowflake" class="w-4 h-4 text-cyan-400"></i>
+                <span>Dynamic Temperature Profile &amp; Critical Threshold $T_c(B)$</span>
+              </span>
+              <span class="text-[11px] mono text-gray-400">Sampling Rate: 250 Hz</span>
+            </div>
+            <div class="h-[125px] w-full">
+              <canvas id="tempTimeSeriesChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Time-Series Chart 2: Shunt Current Allocation & Bus Voltage Drop -->
+          <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 backdrop-blur">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-white mono flex items-center space-x-1.5">
+                <i data-lucide="git-fork" class="w-4 h-4 text-cyan-400"></i>
+                <span>Bypass Current Routing ($I_{\text{HTS}}$ vs $I_{\text{shunt}}$) &amp; Quench Voltage</span>
+              </span>
+              <span id="vQuenchDisp" class="text-[11px] mono text-emerald-400 font-bold">$V_{\text{quench}}$: 0.00 mV</span>
+            </div>
+            <div class="h-[125px] w-full">
+              <canvas id="shuntTimeSeriesChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: CORE PHYSICS & MATHEMATICAL MODEL   -->
+    <!-- ========================================== -->
+    <div id="viewPhysics" class="hidden space-y-6">
+
+      <div class="bg-gradient-to-r from-cyan-950/40 via-blue-950/20 to-purple-950/30 border border-cyan-800/40 rounded-2xl p-6 backdrop-blur">
+        <div class="flex items-center space-x-3 mb-2">
+          <div class="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+            <i data-lucide="atom" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">Coupled Magneto-Thermal Quench Dynamics in Space Superconductors</h2>
+            <p class="text-xs text-gray-400">Microscopic vortex pinning, self-field Bean critical state, and catastrophic normal-zone propagation (NZP)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Core Physics Formula Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Card 1: Critical Surface & Anisotropic Jc -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur">
+          <div>
+            <div class="flex items-center space-x-2 text-cyan-400 mb-2">
+              <i data-lucide="function-square" class="w-5 h-5"></i>
+              <h3 class="font-semibold text-white">1. REBCO 3D Critical Current Surface $J_c(T, B, \theta)$</h3>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+              Second-generation High-Temperature Superconducting (2G HTS) tapes ($\text{YBa}_2\text{Cu}_3\text{O}_{7-\delta}$ or $\text{GdBa}_2\text{Cu}_3\text{O}_{7-\delta}$) do not feature a fixed critical current. The maximum lossless current density $J_c$ is a non-linear, multi-variable boundary governed by thermal activation of pinned magnetic Abrikosov fluxons against the Lorentz driving force:
+            </p>
+
+            <div class="formula-box bg-gray-950 p-3 rounded-lg border border-gray-800 text-center text-cyan-300 text-sm overflow-x-auto my-3">
+              $$J_c(T, B) = J_{c0} \left(1 - \frac{T}{T_c(0)}\right)^{\beta} \left(1 + \frac{B}{B_0}\right)^{-\alpha}$$
+            </div>
+
+            <p class="text-xs text-gray-400 leading-relaxed">
+              Where $J_{c0} \approx 4.5 \times 10^6\text{ A/cm}^2$ at 4.2 K self-field, $\alpha \approx 0.65\text{--}0.85$, and $B_0 \approx 0.8\text{ T}$. For transport currents $I_{\text{bus}} > I_c(T, B)$, an electric field appears according to the power-law relation $E = E_c \left(\frac{I}{I_c}\right)^n$, where the index $n \in [20, 35]$.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800/80 text-[11px] mono text-gray-500 flex justify-between">
+            <span>Reference: Kim-Anderson Critical State Model</span>
+            <span class="text-cyan-400">REBCO $n$-value: 28</span>
+          </div>
+        </div>
+
+        <!-- Card 2: 1D Transient Cryogenic Heat Diffusion & Quench Velocity -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur">
+          <div>
+            <div class="flex items-center space-x-2 text-rose-400 mb-2">
+              <i data-lucide="flame" class="w-5 h-5"></i>
+              <h3 class="font-semibold text-white">2. Transient Thermal Runaway &amp; Normal-Zone Propagation (NZP)</h3>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+              When a localized flux jump or micro-crack generates localized dissipated heat ($Q_{\text{Joule}} = \rho J^2$), it must be removed via axial conduction and sub-cooled gaseous helium/neon forced convection. If generation outpaces cooling, thermal runaway ensues:
+            </p>
+
+            <div class="formula-box bg-gray-950 p-3 rounded-lg border border-gray-800 text-center text-rose-300 text-sm overflow-x-auto my-3">
+              $$C_p(T)\frac{\partial T}{\partial t} = \frac{\partial}{\partial x}\left(k(T)\frac{\partial T}{\partial x}\right) + \frac{\rho(T,B)}{A_{\text{cu}}} I_{\text{shunt}}^2 - \frac{h_c P}{A}\left(T - T_{\text{bath}}\right)$$
+            </div>
+
+            <p class="text-xs text-gray-400 leading-relaxed">
+              Crucially, in HTS conductors at 30–60 K, the volumetric heat capacity $C_p$ is 2 to 3 orders of magnitude larger than at liquid helium (4 K). This makes the minimum quench energy (MQE) high, but causes the **Normal Zone Propagation Velocity ($v_{\text{nzp}}$) to be dangerously slow (mm/s instead of m/s)**. Local hotspots burn out before voltage rises across the bus terminals.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800/80 text-[11px] mono text-gray-500 flex justify-between">
+            <span>Slow NZP Hazard: $v_{\text{nzp}} \sim 10\text{--}50\text{ mm/s}$</span>
+            <span class="text-rose-400">Hotspot Runaway &gt; 350 K</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Hall Matrix Sensor Inversion & Hotspot Reconstruction -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur">
+          <div>
+            <div class="flex items-center space-x-2 text-amber-400 mb-2">
+              <i data-lucide="binary" class="w-5 h-5"></i>
+              <h3 class="font-semibold text-white">3. Non-Invasive Spatial Current &amp; Hotspot Observer</h3>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+              Because slow $v_{\text{nzp}}$ blinds traditional voltage taps until destructive burn-through, SuperConBus deploys an array of outer Hall sensors measuring the magnetic field tensor $\mathbf{B}$ alongside Rayleigh/FBG optical fiber lines. By solving the inverse Biot-Savart equation in real-time ($< 1\text{ ms}$):
+            </p>
+
+            <div class="formula-box bg-gray-950 p-3 rounded-lg border border-gray-800 text-center text-amber-300 text-sm overflow-x-auto my-3">
+              $$\mathbf{B}(\mathbf{r}_k) = \frac{\mu_0}{4\pi}\sum_{j=1}^{N} \frac{I_j \Delta \mathbf{l}_j \times (\mathbf{r}_k - \mathbf{r}_j)}{|\mathbf{r}_k - \mathbf{r}_j|^3} + \mathbf{B}_{\text{thruster}}(\mathbf{r}_k)$$
+            </div>
+
+            <p class="text-xs text-gray-400 leading-relaxed">
+              A 16-channel Kalman filter decomposes current migration between the thin superconducting REBCO ceramic layer ($1\,\mu\text{m}$) and the copper stabilizer substrate ($50\,\mu\text{m}$) based on magnetic self-field asymmetric deformation.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800/80 text-[11px] mono text-gray-500 flex justify-between">
+            <span>Observer Latency: $400\,\mu\text{s}$</span>
+            <span class="text-amber-400">Spatial Res: $1.2\text{ cm}$</span>
+          </div>
+        </div>
+
+        <!-- Card 4: GaN Solid-State Current Shunt Architecture -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between backdrop-blur">
+          <div>
+            <div class="flex items-center space-x-2 text-emerald-400 mb-2">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+              <h3 class="font-semibold text-white">4. Fast Autonomous Shunting &amp; Energy Extraction</h3>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+              When the state observer projects a trajectory crossing the safety boundary $\Delta_{\text{guard}}$, high-speed Gallium Nitride (GaN) cryo-MOSFET switches activate in under $5\,\mu\text{s}$, diverting the current to a parallel cryogenically-cooled hyper-conductive copper matrix:
+            </p>
+
+            <div class="formula-box bg-gray-950 p-3 rounded-lg border border-gray-800 text-center text-emerald-300 text-sm overflow-x-auto my-3">
+              $$I_{\text{bus}}(t) = I_{\text{HTS}}(t) + I_{\text{shunt}}(t), \quad L_{\text{link}}\frac{dI}{dt} + R_{\text{shunt}}(T) I_{\text{shunt}} = V_{\text{reactor}}$$
+            </div>
+
+            <p class="text-xs text-gray-400 leading-relaxed">
+              This relieves Joule heating in the REBCO tape ($P = 0\text{ W}$), allowing forced helium refrigeration to recover superconductivity without blowing the bus vacuum insulation or demanding a complete nuclear reactor emergency scram.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800/80 text-[11px] mono text-gray-500 flex justify-between">
+            <span>GaN Switch Slew: $2.5\text{ kA}/\mu\text{s}$</span>
+            <span class="text-emerald-400">Zero Arc Hazard in Vacuum</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Conductor Microstructure & Materials Spec Strip -->
+      <div class="bg-gray-950/70 border border-gray-800 rounded-2xl p-5">
+        <h4 class="text-sm font-semibold text-white mb-3 flex items-center space-x-2">
+          <i data-lucide="microscope" class="w-4 h-4 text-cyan-400"></i>
+          <span>Flight Conductor Cross-Section &amp; Cryostat Specifications</span>
+        </h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs mono">
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800/80">
+            <span class="text-gray-400 block mb-1">Superconducting Core:</span>
+            <span class="text-cyan-300 font-bold text-sm">REBCO 2G Coated Conductor</span>
+            <p class="text-[10px] text-gray-500 mt-1">Hastelloy C-276 substrate (50 $\mu$m) + GdBaCuO (1.8 $\mu$m)</p>
+          </div>
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800/80">
+            <span class="text-gray-400 block mb-1">Stabilizer &amp; Shunt Matrix:</span>
+            <span class="text-amber-300 font-bold text-sm">Cryo-OFHC Copper (RRR &gt; 150)</span>
+            <p class="text-[10px] text-gray-500 mt-1">Direct electroplated 40 $\mu$m jacket + external shunt rail</p>
+          </div>
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800/80">
+            <span class="text-gray-400 block mb-1">Cryogenic Coolant:</span>
+            <span class="text-cyan-300 font-bold text-sm">Sub-cooled Gaseous He @ 30–50 K</span>
+            <p class="text-[10px] text-gray-500 mt-1">Operating pressure 1.8 MPa, closed-loop Brayton cycle</p>
+          </div>
+          <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800/80">
+            <span class="text-gray-400 block mb-1">Vacuum Insulation:</span>
+            <span class="text-purple-300 font-bold text-sm">10⁻⁴ Pa MLI Jacket</span>
+            <p class="text-[10px] text-gray-500 mt-1">30-layer Mylar MLI, carbon-fiber outer protection casing</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: NASA SBIR/STTR PROPOSAL & WORK PLAN -->
+    <!-- ========================================== -->
+    <div id="viewProposal" class="hidden space-y-6">
+
+      <!-- Executive Header -->
+      <div class="bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-cyan-950/40 border border-blue-800/40 rounded-2xl p-6 backdrop-blur">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 mono">NASA SBIR/STTR Phase I</span>
+              <span class="text-xs text-gray-400 mono">Solicitation Topic: T4.02</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white mt-1">Superconducting Power Distribution for Megawatt-Class Electric Spacecraft</h2>
+            <p class="text-xs sm:text-sm text-gray-300 mt-1">High-Reliability Autonomous Quench Prevention for Nuclear Electric Propulsion (NEP)</p>
+          </div>
+          <div class="text-right mono">
+            <div class="text-2xl font-bold text-cyan-400">$225,000</div>
+            <div class="text-xs text-gray-400">Phase I Period of Performance: 6 Months</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Metrics & Subcontract Allocation Strip -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 backdrop-blur">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400 mono">LEAD CONTRACTOR</span>
+            <i data-lucide="building" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="text-lg font-bold text-white mt-2">RF Wavecode Technologies LLC</div>
+          <p class="text-xs text-gray-400 mt-1">Small Business Concern (SBC) • 70.0% Allocation ($157,500)</p>
+        </div>
+
+        <div class="bg-gray-900/50 border border-cyan-800/40 rounded-2xl p-4 backdrop-blur">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-cyan-400 mono">RESEARCH INSTITUTION PARTNER (STTR)</span>
+            <i data-lucide="graduation-cap" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="text-lg font-bold text-white mt-2">Univ. of Central Florida (UCF)</div>
+          <p class="text-xs text-cyan-300 mt-1">CATER Labs • Exact 30.0% Subcontract Allocation ($67,500)</p>
+        </div>
+
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 backdrop-blur">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400 mono">NASA MISSION ALIGNMENT</span>
+            <i data-lucide="rocket" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div class="text-lg font-bold text-white mt-2">Artemis &amp; Mars NEP Cargo Transfer</div>
+          <p class="text-xs text-gray-400 mt-1">5 MW_e Megawatt Nuclear Electric Propulsion Architecture</p>
+        </div>
+      </div>
+
+      <!-- 6-Month Phase I Work Breakdown Structure (WBS) -->
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur">
+        <h3 class="font-semibold text-white mb-4 flex items-center space-x-2 text-sm sm:text-base">
+          <i data-lucide="calendar" class="w-4 h-4 text-cyan-400"></i>
+          <span>Phase I Work Breakdown Schedule &amp; Milestones (Months 1 to 6)</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Milestone 1 -->
+          <div class="p-4 rounded-xl bg-gray-950/70 border border-gray-800 relative">
+            <span class="mono text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-semibold">MONTHS 1–2</span>
+            <h4 class="font-bold text-white text-sm mt-2">M1: Coupled Kinetic &amp; Critical-Surface Modeling</h4>
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+              Formulate 3D finite-element model of 4 kA REBCO tape stacks under combined transport current and thruster stray fields ($0\text{--}4\text{ T}$). Quantify anisotropic angular dependencies $\theta$ and local flux pinning defects.
+            </p>
+            <div class="mt-3 text-[11px] mono text-cyan-400">Deliverable: D1 Numerical Validation Report</div>
+          </div>
+
+          <!-- Milestone 2 -->
+          <div class="p-4 rounded-xl bg-gray-950/70 border border-gray-800 relative">
+            <span class="mono text-[10px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-semibold">MONTHS 2–3</span>
+            <h4 class="font-bold text-white text-sm mt-2">M2: Hall/FBG Observer &amp; Inversion Algorithm</h4>
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+              Design sub-millisecond inverse Biot-Savart solver. Code 16-channel array state estimator running on radiation-hardened FPGA emulation to detect sub-millimeter quench precursors before thermal runaway.
+            </p>
+            <div class="mt-3 text-[11px] mono text-blue-400">Deliverable: D2 Observer Firmware Core</div>
+          </div>
+
+          <!-- Milestone 3 -->
+          <div class="p-4 rounded-xl bg-gray-950/70 border border-gray-800 relative">
+            <span class="mono text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-semibold">MONTHS 4–5</span>
+            <h4 class="font-bold text-white text-sm mt-2">M3: GaN Fast Shunt Controller Hardware-in-the-Loop</h4>
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+              Synthesize autonomous solid-state current bypass logic. Validate $5\,\mu\text{s}$ shunt transfer across 4.2 kA busbar safely shunting energy without exceeding the $50\text{ K}$ conductor safety threshold.
+            </p>
+            <div class="mt-3 text-[11px] mono text-amber-400">Deliverable: D3 HIL Test Bench Data</div>
+          </div>
+
+          <!-- Milestone 4 -->
+          <div class="p-4 rounded-xl bg-gray-950/70 border border-gray-800 relative">
+            <span class="mono text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold">MONTH 6</span>
+            <h4 class="font-bold text-white text-sm mt-2">M4: Phase II Flight Prototype Specification</h4>
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+              Finalize Phase II Transition Plan with NASA GRC and MSFC. Lay out flight-weight vacuum cryostat prototype assembly, sensor harness integration, and subscale cryogenic test plan at UCF CATER facilities.
+            </p>
+            <div class="mt-3 text-[11px] mono text-emerald-400">Deliverable: D4 Final Phase II Proposal ($1.2M)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase II Transition Plan & Partner Facilities -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur">
+          <h4 class="text-sm font-semibold text-white mb-2 flex items-center space-x-2">
+            <i data-lucide="zap" class="w-4 h-4 text-cyan-400"></i>
+            <span>University Research Partner: UCF CATER Facilities</span>
+          </h4>
+          <p class="text-xs text-gray-300 leading-relaxed mb-3">
+            The Center for Advanced Turbomachinery and Energy Research (CATER) at UCF provides world-class cryogenic flow loops, ultra-high-vacuum chambers ($10^{-5}\text{ Pa}$), and superconducting pulsed-field test facilities.
+          </p>
+          <ul class="text-xs text-gray-400 space-y-1.5 list-disc list-inside">
+            <li>Sub-cooled gaseous helium loop rated down to 20 K at 2.5 MPa</li>
+            <li>High-current pulsed power supplies capable of 10 kA transient injections</li>
+            <li>Multi-channel distributed optical fiber interrogators ($0.5\text{ mm}$ spatial resolution)</li>
+          </ul>
+        </div>
+
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur">
+          <h4 class="text-sm font-semibold text-white mb-2 flex items-center space-x-2">
+            <i data-lucide="external-link" class="w-4 h-4 text-purple-400"></i>
+            <span>Phase II Hardware Maturation ($1.2M Envelope)</span>
+          </h4>
+          <p class="text-xs text-gray-300 leading-relaxed mb-3">
+            Phase II will construct a 5-meter full-scale prototype busbar qualifying for TRL 5/6 transition to NASA's Glenn Research Center Electric Aircraft Testbed (NEAT) and Marshall Space Flight Center NEP integration rigs.
+          </p>
+          <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 text-xs mono text-gray-400 flex justify-between items-center">
+            <span>Target TRL Entry: <strong class="text-white">TRL 3</strong></span>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-cyan-400"></i>
+            <span>Target TRL Exit: <strong class="text-cyan-400">TRL 6</strong></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: COMMERCIAL & NATIONWIDE ARR         -->
+    <!-- ========================================== -->
+    <div id="viewARR" class="hidden space-y-6">
+
+      <!-- Executive Commercial Summary Banner -->
+      <div class="bg-gradient-to-r from-emerald-950/40 via-cyan-950/30 to-blue-950/40 border border-emerald-800/40 rounded-2xl p-6 backdrop-blur">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mono">Civil Deep-Tech Commercialization</span>
+              <span class="text-xs text-gray-400 mono">Enterprise SaaS &amp; Runtime License Model</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white mt-1">SuperConBus: Dual-Use Industrial Cryo-Stability Guard</h2>
+            <p class="text-xs sm:text-sm text-gray-300 mt-1">
+              Preventing catastrophic thermal runaway in zero-loss energy infrastructure across aerospace, healthcare, fusion, and high-performance computing.
+            </p>
+          </div>
+          <div class="text-right mono">
+            <div class="text-3xl font-extrabold text-emerald-400">$218.4M</div>
+            <div class="text-xs text-gray-400">Total Projected Mature Civil ARR</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARR Breakdown Table -->
+      <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur overflow-x-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-white flex items-center space-x-2 text-sm sm:text-base">
+            <i data-lucide="table" class="w-4 h-4 text-emerald-400"></i>
+            <span>Nationwide Civil ARR Distribution by Industry Vertical</span>
+          </h3>
+          <span class="mono text-xs text-gray-400">Market Penetration Timeline: Years 1–5</span>
+        </div>
+
+        <table class="w-full text-left text-xs mono min-w-[650px]">
+          <thead>
+            <tr class="border-b border-gray-800 text-gray-400 bg-gray-950/50">
+              <th class="py-2.5 px-3">Vertical / Application</th>
+              <th class="py-2.5 px-3">Target Asset Base (Nationwide)</th>
+              <th class="py-2.5 px-3">Runtime Software Pricing Model</th>
+              <th class="py-2.5 px-3">Adoption Rate</th>
+              <th class="py-2.5 px-3 text-right">Mature Annual ARR</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800/60 text-gray-300">
+            <tr class="hover:bg-gray-800/30">
+              <td class="py-3 px-3 font-medium text-white flex items-center space-x-2">
+                <i data-lucide="plane" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span>Commercial Cryo-Electric Aviation</span>
+              </td>
+              <td class="py-3 px-3">1,850 Regional eVTOL / H₂ Turboprops</td>
+              <td class="py-3 px-3">$28,000 / powertrain / year</td>
+              <td class="py-3 px-3 text-emerald-400">38%</td>
+              <td class="py-3 px-3 text-right font-bold text-white">$19.68M</td>
+            </tr>
+            <tr class="hover:bg-gray-800/30">
+              <td class="py-3 px-3 font-medium text-white flex items-center space-x-2">
+                <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Commercial Tokamak &amp; Stellarator Fusion</span>
+              </td>
+              <td class="py-3 px-3">34 Pilot Power Plants &amp; Test Reactors</td>
+              <td class="py-3 px-3">$750,000 / magnet array / year</td>
+              <td class="py-3 px-3 text-emerald-400">82%</td>
+              <td class="py-3 px-3 text-right font-bold text-white">$20.91M</td>
+            </tr>
+            <tr class="hover:bg-gray-800/30">
+              <td class="py-3 px-3 font-medium text-white flex items-center space-x-2">
+                <i data-lucide="activity-square" class="w-3.5 h-3.5 text-rose-400"></i>
+                <span>Hospital Ultra-High-Field MRI (7T &amp; 11T)</span>
+              </td>
+              <td class="py-3 px-3">4,600 Clinical Scanner Facilities</td>
+              <td class="py-3 px-3">$8,400 / scanner diagnostic license</td>
+              <td class="py-3 px-3 text-emerald-400">45%</td>
+              <td class="py-3 px-3 text-right font-bold text-white">$17.38M</td>
+            </tr>
+            <tr class="hover:bg-gray-800/30">
+              <td class="py-3 px-3 font-medium text-white flex items-center space-x-2">
+                <i data-lucide="cpu" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Hyperscale AI &amp; Quantum Datacenter Power Links</span>
+              </td>
+              <td class="py-3 px-3">820 Tier-4 Data Centers (HTS Ingress)</td>
+              <td class="py-3 px-3">$95,000 / campus power busbar</td>
+              <td class="py-3 px-3 text-emerald-400">60%</td>
+              <td class="py-3 px-3 text-right font-bold text-white">$46.74M</td>
+            </tr>
+            <tr class="hover:bg-gray-800/30">
+              <td class="py-3 px-3 font-medium text-white flex items-center space-x-2">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-400"></i>
+                <span>Urban Metropolitan HVDC Super-Cables</span>
+              </td>
+              <td class="py-3 px-3">1,400 Underground Substation Feeds</td>
+              <td class="py-3 px-3">$64,000 / transmission mile / year</td>
+              <td class="py-3 px-3 text-emerald-400">55%</td>
+              <td class="py-3 px-3 text-right font-bold text-white">$49.28M</td>
+            </tr>
+            <tr class="hover:bg-gray-800/30">
+              <td class="py-3 px-3 font-medium text-white flex items-center space-x-2">
+                <i data-lucide="train" class="w-3.5 h-3.5 text-blue-400"></i>
+                <span>High-Speed Maglev Ground Transit</span>
+              </td>
+              <td class="py-3 px-3">6,800 Track Kilometers &amp; Bogeys</td>
+              <td class="py-3 px-3">$14,500 / bogie trainset / year</td>
+              <td class="py-3 px-3 text-emerald-400">65%</td>
+              <td class="py-3 px-3 text-right font-bold text-white">$64.41M</td>
+            </tr>
+            <tr class="bg-gray-950 font-bold border-t-2 border-emerald-500/50">
+              <td class="py-3 px-3 text-white">TOTAL PROJECTED CIVIL RUNTIME ARR</td>
+              <td class="py-3 px-3 text-gray-400">15,504 Assets Nationwide</td>
+              <td class="py-3 px-3 text-gray-400">Standard Tier Blended</td>
+              <td class="py-3 px-3 text-emerald-400">54.2% Avg</td>
+              <td class="py-3 px-3 text-right text-emerald-400 text-sm">$218.40M</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Deep Dive Cards for Each Civil Industry -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Card 1: Aviation -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-white flex items-center space-x-2 text-sm">
+                <i data-lucide="plane" class="w-4 h-4 text-cyan-400"></i>
+                <span>Cryo-Electric Regional Aviation</span>
+              </h4>
+              <span class="mono text-[10px] text-cyan-400 px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800">$19.7M ARR</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-cyan-300 font-medium">Physics in 1 Sentence:</span>
+                <p class="text-gray-300 mt-0.5">Liquid hydrogen fuel serves as both reaction mass and cryogenic heatsink, operating HTS busbars at 25 K to carry 5 MW from tail turbine to wingtip fans with 99.8% electrical efficiency.</p>
+              </div>
+              <div class="pt-2 border-t border-gray-800">
+                <span class="text-amber-300 font-medium">Why Others Missed This (Plain English):</span>
+                <p class="text-gray-400 mt-0.5">Incumbents relied on bulky copper wiring weighing thousands of kilograms, assuming HTS quench was too unpredictable for FAA passenger transport certification.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-gray-800 text-[10px] mono text-gray-500">Target Customers: Airbus UpNext, Heart Aerospace, ZeroAvia</div>
+        </div>
+
+        <!-- Card 2: Fusion -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-white flex items-center space-x-2 text-sm">
+                <i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>
+                <span>Commercial Magnetic Confinement Fusion</span>
+              </h4>
+              <span class="mono text-[10px] text-amber-400 px-2 py-0.5 rounded bg-amber-950 border border-amber-800">$20.9M ARR</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-amber-300 font-medium">Physics in 1 Sentence:</span>
+                <p class="text-gray-300 mt-0.5">20-Tesla toroidal field magnets store gigajoules of magnetic energy; an unmitigated local normal zone melts millions of dollars of REBCO tape in under 300 milliseconds.</p>
+              </div>
+              <div class="pt-2 border-t border-gray-800">
+                <span class="text-rose-300 font-medium">Why Others Missed This (Plain English):</span>
+                <p class="text-gray-400 mt-0.5">Firms waited for millivolt terminal voltage spikes that arrive too late due to slow normal zone propagation in high-current coated conductor tapes.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-gray-800 text-[10px] mono text-gray-500">Target Customers: Commonwealth Fusion, Tokamak Energy, Helion</div>
+        </div>
+
+        <!-- Card 3: Healthcare MRI -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-white flex items-center space-x-2 text-sm">
+                <i data-lucide="activity-square" class="w-4 h-4 text-rose-400"></i>
+                <span>Next-Gen High-Field Healthcare MRI</span>
+              </h4>
+              <span class="mono text-[10px] text-rose-400 px-2 py-0.5 rounded bg-rose-950 border border-rose-800">$17.4M ARR</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-rose-300 font-medium">Physics in 1 Sentence:</span>
+                <p class="text-gray-300 mt-0.5">Helium-free 7T+ MRI scanners run dry conduction cooling where thermal impedance is higher, making local hot spots critical failure vectors for catastrophic boil-offs.</p>
+              </div>
+              <div class="pt-2 border-t border-gray-800">
+                <span class="text-cyan-300 font-medium">Why Others Missed This (Plain English):</span>
+                <p class="text-gray-400 mt-0.5">Hospitals treat magnet quench as an accepted catastrophic insurance write-off requiring venting tens of thousands of dollars of irreplaceable liquid helium.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-gray-800 text-[10px] mono text-gray-500">Target Customers: Siemens Healthineers, GE Healthcare, Philips</div>
+        </div>
+
+        <!-- Card 4: AI & Quantum Datacenters -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-white flex items-center space-x-2 text-sm">
+                <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+                <span>Hyperscale AI &amp; Quantum Datacenters</span>
+              </h4>
+              <span class="mono text-[10px] text-purple-400 px-2 py-0.5 rounded bg-purple-950 border border-purple-800">$46.7M ARR</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-purple-300 font-medium">Physics in 1 Sentence:</span>
+                <p class="text-gray-300 mt-0.5">Routing 100 kA low-voltage DC directly into cryogenic dilution refrigerators and GPU pods eliminates $I^2R$ power distribution losses that consume up to 15% of datacenter electricity.</p>
+              </div>
+              <div class="pt-2 border-t border-gray-800">
+                <span class="text-yellow-300 font-medium">Why Others Missed This (Plain English):</span>
+                <p class="text-gray-400 mt-0.5">Operators stacked massive copper busbar trunks requiring massive chilled water jackets instead of adopting compact, zero-resistance cryogenic pipelines.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-gray-800 text-[10px] mono text-gray-500">Target Customers: Microsoft Azure, Google Cloud, AWS, IBM Quantum</div>
+        </div>
+
+        <!-- Card 5: Metropolitan Grid -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-white flex items-center space-x-2 text-sm">
+                <i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i>
+                <span>Metropolitan Underground HVDC Grids</span>
+              </h4>
+              <span class="mono text-[10px] text-yellow-400 px-2 py-0.5 rounded bg-yellow-950 border border-yellow-800">$49.3M ARR</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-yellow-300 font-medium">Physics in 1 Sentence:</span>
+                <p class="text-gray-300 mt-0.5">Superconducting cables squeeze 3 gigawatts through standard 15-centimeter telecommunication utility conduits without heating adjacent underground cables or soil.</p>
+              </div>
+              <div class="pt-2 border-t border-gray-800">
+                <span class="text-emerald-300 font-medium">Why Others Missed This (Plain English):</span>
+                <p class="text-gray-400 mt-0.5">Utilities spend billions digging up city streets to lay dozens of conventional copper cables because they feared single-point cryogenic line failures.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-gray-800 text-[10px] mono text-gray-500">Target Customers: ConEdison, National Grid, PG&amp;E, Nexans</div>
+        </div>
+
+        <!-- Card 6: Maglev Transit -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-bold text-white flex items-center space-x-2 text-sm">
+                <i data-lucide="train" class="w-4 h-4 text-blue-400"></i>
+                <span>High-Speed Maglev Ground Transit</span>
+              </h4>
+              <span class="mono text-[10px] text-blue-400 px-2 py-0.5 rounded bg-blue-950 border border-blue-800">$64.4M ARR</span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <div>
+                <span class="text-blue-300 font-medium">Physics in 1 Sentence:</span>
+                <p class="text-gray-300 mt-0.5">Onboard superconducting levitation magnets experience intense dynamic mechanical vibration and harmonic AC losses while traveling at 600 km/h, elevating flux jump probabilities.</p>
+              </div>
+              <div class="pt-2 border-t border-gray-800">
+                <span class="text-purple-300 font-medium">Why Others Missed This (Plain English):</span>
+                <p class="text-gray-400 mt-0.5">Rail systems relied on over-designed heavy copper dampers that increase trainset mass by 25%, drastically penalizing vehicle acceleration and efficiency.</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-gray-800 text-[10px] mono text-gray-500">Target Customers: JR Central (Chuo Shinkansen), CRRC, Northeast Maglev</div>
+        </div>
+
+      </div>
+
+      <!-- Enterprise Valuation & Executive Pitch Banner -->
+      <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 backdrop-blur space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+            <span class="text-xs text-gray-400 mono">ANNUAL RUNTIME ARR</span>
+            <div class="text-2xl font-bold text-emerald-400 mono mt-1">$218.4 Million</div>
+            <span class="text-[10px] text-gray-500">Mature nationwide recurring software revenue</span>
+          </div>
+
+          <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+            <span class="text-xs text-gray-400 mono">IMPLIED ENTERPRISE VALUATION</span>
+            <div class="text-2xl font-bold text-cyan-400 mono mt-1">$1.75B – $2.62B</div>
+            <span class="text-[10px] text-gray-500">Based on 8x – 12x Deep-Tech Software Multiples</span>
+          </div>
+
+          <div class="p-4 bg-gray-950 rounded-xl border border-gray-800">
+            <span class="text-xs text-gray-400 mono">STRATEGIC EXIT PATHWAY</span>
+            <div class="text-2xl font-bold text-purple-400 mono mt-1">Tier-1 Aerospace / Power</div>
+            <span class="text-[10px] text-gray-500">Acquisition targets: GE Vernova, Honeywell, RTX, Siemens</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-cyan-950/30 border border-cyan-800/40 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h4 class="text-sm font-semibold text-white">Executive Partnership &amp; Commercial Licensing</h4>
+            <p class="text-xs text-gray-300 mt-0.5">Direct commercial inquiries, technical diligence packages, and Phase II demonstration access:</p>
+          </div>
+          <a href="mailto:support@rfwavecode.com" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold text-xs mono transition flex items-center space-x-2 glow-cyan">
+            <i data-lucide="mail" class="w-4 h-4"></i>
+            <span>support@rfwavecode.com</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800/80 bg-[#05070d] py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
+      <div class="flex items-center space-x-2 mono">
+        <span>SuperConBus Guard</span>
+        <span>•</span>
+        <span>NASA SBIR Topic T4.02 STTR Joint Initiative</span>
+      </div>
+      <div class="mono text-[11px]">
+        Lead SBC: <span class="text-gray-300">RF Wavecode Technologies LLC</span> | Subcontract Partner: <span class="text-cyan-400">UCF CATER</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: SIMULATION, CHARTS, AND OBSERVER CONTROLLER  -->
+  <!-- ======================================================== -->
+  <script>
+    // --- 1. Tab Navigation System ---
+    const tabMapping = {
+      'sim': { viewId: 'viewSim', btnId: 'tabBtnSim' },
+      'physics': { viewId: 'viewPhysics', btnId: 'tabBtnPhysics' },
+      'proposal': { viewId: 'viewProposal', btnId: 'tabBtnProposal' },
+      'arr': { viewId: 'viewARR', btnId: 'tabBtnARR' }
+    };
+
+    function switchTab(tabKey) {
+      Object.keys(tabMapping).forEach(key => {
+        const item = tabMapping[key];
+        const viewEl = document.getElementById(item.viewId);
+        const btnEl = document.getElementById(item.btnId);
+
+        if (key === tabKey) {
+          viewEl.classList.remove('hidden');
+          btnEl.className = 'flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.className = 'flex items-center space-x-2 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-gray-400 hover:text-gray-200';
+        }
+      });
+
+      // Rerender MathJax when formulas become visible
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise().catch(err => console.debug(err));
+      }
+
+      // Re-adjust canvas & charts if switching back to simulation
+      if (tabKey === 'sim') {
+        setTimeout(() => {
+          resizeCanvas();
+          if (phaseChart) phaseChart.resize();
+          if (tempChart) tempChart.resize();
+          if (shuntChart) shuntChart.resize();
+        }, 50);
+      }
+    }
+
+    // --- 2. Simulation State & Dynamic Parameters ---
+    const state = {
+      busCurrent: 4200,      // Amperes
+      bExternal: 1.20,       // Tesla
+      tInlet: 35.0,          // Kelvin
+      hotspotLoc: 2.15,      // meters (along 4m bus)
+      hotspotIntensity: 0.0, // extra thermal spike
+      fluxJumpTriggered: false,
+      vacuumLeakActive: false,
+      autoGuardArmed: true,
+      shuntRatio: 0.0,       // 0.0 (superconducting) to 1.0 (100% shunted)
+      vQuench: 0.0,          // millivolts
+      quenched: false,
+
+      // Spatial arrays for 16 bus sectors
+      numSectors: 24,
+      sectors: []
+    };
+
+    // Initialize 24 discrete busbar spatial segments
+    for (let i = 0; i < state.numSectors; i++) {
+      state.sectors.push({
+        x: (i / (state.numSectors - 1)) * 4.0, // 0 to 4 meters
+        T: 35.0,
+        B: 1.20,
+        I_hts: 4200,
+        I_cu: 0,
+        quenched: false
+      });
+    }
+
+    // Critical Surface Formula for REBCO Tape
+    // Critical envelope boundary Tc(B): Critical temperature drops as B increases
+    function getCriticalTemp(B) {
+      // Tc(0) = 92 K; under field B, Tc(B) = Tc0 * (1 - B/B_c2)^(1/2) approximately
+      const Bc2 = 18.0; // Upper critical field at 0K in Tesla
+      if (B >= Bc2) return 0;
+      return 92.0 * Math.pow(Math.max(0, 1 - (B / Bc2)), 0.65);
+    }
+
+    // Critical field Bc2(T):
+    function getCriticalField(T) {
+      if (T >= 92.0) return 0;
+      return 18.0 * (1 - Math.pow(T / 92.0, 1.5));
+    }
+
+    // Critical Current Ic(T, B) in Amperes
+    function getCriticalCurrent(T, B) {
+      if (T >= 92.0) return 0;
+      const Tc_B = getCriticalTemp(B);
+      if (T >= Tc_B) return 0;
+      const Ic0 = 9200; // Base current capacity at 4K self-field
+      const tNorm = Math.max(0, 1 - (T / 92.0));
+      const bFactor = 1 / (1 + (B / 0.85));
+      return Ic0 * Math.pow(tNorm, 1.45) * bFactor;
+    }
+
+    // Update state parameters from UI sliders
+    function updateSimulationParams() {
+      state.busCurrent = parseFloat(document.getElementById('sliderCurrent').value);
+      state.bExternal = parseFloat(document.getElementById('sliderB').value);
+      state.tInlet = parseFloat(document.getElementById('sliderT').value);
+      state.autoGuardArmed = document.getElementById('autoGuardToggle').checked;
+
+      document.getElementById('sliderCurrentVal').innerText = state.busCurrent.toLocaleString() + ' A';
+      document.getElementById('sliderBVal').innerText = state.bExternal.toFixed(2) + ' T';
+      document.getElementById('sliderTVal').innerText = state.tInlet.toFixed(1) + ' K';
+    }
+
+    function resetNominal() {
+      document.getElementById('sliderCurrent').value = 4200;
+      document.getElementById('sliderB').value = 1.2;
+      document.getElementById('sliderT').value = 35.0;
+      document.getElementById('autoGuardToggle').checked = true;
+      state.hotspotIntensity = 0.0;
+      state.fluxJumpTriggered = false;
+      state.vacuumLeakActive = false;
+      state.shuntRatio = 0.0;
+      updateSimulationParams();
+    }
+
+    function injectDisturbance(type) {
+      if (type === 'flux_jump') {
+        state.hotspotIntensity += 18.0; // Rapid 18K thermal / field spike
+        state.bExternal += 1.8;
+        document.getElementById('sliderB').value = Math.min(4.0, state.bExternal).toFixed(2);
+        updateSimulationParams();
+        triggerAlertNotification('MAGNETIC FLUX JUMP (SEC-13) DETECTED');
+      } else if (type === 'thermal_leak') {
+        state.vacuumLeakActive = true;
+        state.hotspotIntensity += 26.0;
+        triggerAlertNotification('CRYOSTAT VACUUM LEAK: RUNAWAY HEATING');
+      }
+    }
+
+    function triggerAlertNotification(msg) {
+      const overlay = document.getElementById('canvasAlertOverlay');
+      const text = document.getElementById('canvasAlertMsg');
+      if (overlay && text) {
+        text.innerText = msg;
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+        }, 3200);
+      }
+    }
+
+    // --- 3. Canvas Physical Busbar Rendering ---
+    const canvas = document.getElementById('busCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width || 600;
+      const h = rect.height || 280;
+      canvas.width = w * window.devicePixelRatio;
+      canvas.height = h * window.devicePixelRatio;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.resetTransform();
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Particle flow representation along the superconductor
+    const particles = [];
+    for (let p = 0; p < 75; p++) {
+      particles.push({
+        x: Math.random() * 800,
+        y: Math.random() * 40 - 20,
+        speed: 1.5 + Math.random() * 3.5,
+        size: 1.2 + Math.random() * 2
+      });
+    }
+
+    function drawBusCanvas(peakT, peakB, isShunting) {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      // Dark futuristic chamber background
+      ctx.fillStyle = '#020409';
+      ctx.fillRect(0, 0, w, h);
+
+      // Cryostat Vacuum Outer Casing
+      const busY = h * 0.48;
+      const busHeight = 70;
+      const marginX = 30;
+      const busWidth = w - marginX * 2;
+
+      // Draw Outer Vacuum Tube Walls
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(marginX - 5, busY - busHeight / 2 - 18, busWidth + 10, busHeight + 36, 12);
+      ctx.stroke();
+
+      // MLI Insulation Layer (amber striped subtle pattern)
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
+      ctx.lineWidth = 2;
+      for (let i = marginX; i < marginX + busWidth; i += 16) {
+        ctx.beginPath();
+        ctx.moveTo(i, busY - busHeight / 2 - 12);
+        ctx.lineTo(i + 8, busY - busHeight / 2 - 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(i, busY + busHeight / 2 + 2);
+        ctx.lineTo(i + 8, busY + busHeight / 2 + 12);
+        ctx.stroke();
+      }
+
+      // Cryo-Coolant Annulus (Gaseous Helium Stream)
+      ctx.fillStyle = isShunting ? 'rgba(239, 68, 68, 0.08)' : 'rgba(6, 182, 212, 0.08)';
+      ctx.fillRect(marginX, busY - busHeight / 2, busWidth, busHeight);
+
+      // Copper Stabilizer Backing Plate (Upper & Lower)
+      ctx.fillStyle = isShunting ? '#b45309' : '#78350f';
+      ctx.fillRect(marginX, busY - busHeight / 2 + 6, busWidth, 12);
+      ctx.fillRect(marginX, busY + busHeight / 2 - 18, busWidth, 12);
+
+      // Central REBCO 2G High-Temp Superconducting Core Ribbon
+      const coreY = busY - 10;
+      const coreH = 20;
+
+      // Color changes if hotspot develops
+      const tempRatio = Math.min(1.0, Math.max(0, (peakT - 30) / 45));
+      const coreGradient = ctx.createLinearGradient(marginX, 0, marginX + busWidth, 0);
+      
+      coreGradient.addColorStop(0, '#06b6d4');
+      // Hotspot localized around x = 55%
+      const hotspotPct = 0.54;
+      const rVal = Math.round(6 + tempRatio * 240);
+      const gVal = Math.round(182 - tempRatio * 130);
+      const bVal = Math.round(212 - tempRatio * 180);
+      coreGradient.addColorStop(Math.max(0, hotspotPct - 0.15), '#06b6d4');
+      coreGradient.addColorStop(hotspotPct, `rgb(${rVal}, ${gVal}, ${bVal})`);
+      coreGradient.addColorStop(Math.min(1, hotspotPct + 0.15), '#06b6d4');
+
+      ctx.fillStyle = coreGradient;
+      ctx.shadowColor = `rgb(${rVal}, ${gVal}, ${bVal})`;
+      ctx.shadowBlur = 15;
+      ctx.fillRect(marginX, coreY, busWidth, coreH);
+      ctx.shadowBlur = 0; // reset
+
+      // Flowing Superconducting Charge Carrier Particles
+      particles.forEach(p => {
+        p.x += p.speed;
+        if (p.x > busWidth) p.x = 0;
+
+        const px = marginX + p.x;
+        // If shunted, electrons deflect outward into the copper stabilizer
+        let py = busY + p.y;
+        if (isShunting && Math.abs(px - (marginX + busWidth * hotspotPct)) < 70) {
+          py += (p.y > 0 ? 14 : -14); // current diversion
+        }
+
+        ctx.fillStyle = isShunting && Math.abs(px - (marginX + busWidth * hotspotPct)) < 80 ? '#fbbf24' : '#e0f2fe';
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Sensor Interrogation Array (Hall Probes + FBG line)
+      // Optical fiber line running just above the REBCO core
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(marginX, coreY - 4);
+      ctx.lineTo(marginX + busWidth, coreY - 4);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 16 Hall Sensors (Icons/Points along bottom)
+      for (let s = 0; s < 16; s++) {
+        const sx = marginX + (s / 15) * busWidth;
+        const sy = busY + busHeight / 2 + 22;
+
+        const isProbeHot = (s >= 7 && s <= 10 && peakT > 48);
+
+        ctx.fillStyle = isProbeHot ? '#ef4444' : '#0ea5e9';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - 4);
+        ctx.lineTo(sx, busY + busHeight / 2 + 4);
+        ctx.stroke();
+      }
+
+      // Shunt Bypass Switch Representation (Solid-state GaN)
+      if (isShunting) {
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const swX = marginX + busWidth * hotspotPct;
+        ctx.moveTo(swX - 30, coreY - 14);
+        ctx.lineTo(swX, busY - busHeight / 2 + 12);
+        ctx.lineTo(swX + 30, coreY - 14);
+        ctx.stroke();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = '10px JetBrains Mono';
+        ctx.fillText('GaN BYPASS ACTIVE (' + (state.shuntRatio * 100).toFixed(0) + '%)', swX - 60, busY - busHeight / 2 - 24);
+      }
+
+      // Labels on Canvas
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px JetBrains Mono';
+      ctx.fillText('CRYOSTAT VACUUM JACKET (10⁻⁴ Pa)', marginX + 10, busY - busHeight / 2 - 24);
+      ctx.fillText('DISTRIBUTED FBG FIBER OPTIC LINE', marginX + 10, h - 14);
+      ctx.fillText('16× CRYOGENIC HALL SENSORS', marginX + busWidth - 180, h - 14);
+    }
+
+    // --- 4. Chart.js Phase-Space & Dynamic Telemetry Setup ---
+    let phaseChart, tempChart, shuntChart;
+
+    function initCharts() {
+      // 1. Phase Space Chart (T vs B)
+      const phaseCtx = document.getElementById('phaseChart').getContext('2d');
+
+      // Generate Critical Boundary Curve points
+      const boundaryPoints = [];
+      for (let t = 20; t <= 92; t += 2) {
+        boundaryPoints.push({ x: t, y: Math.max(0, getCriticalField(t)) });
+      }
+
+      phaseChart = new Chart(phaseCtx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Critical Quench Boundary Bc2(T)',
+              data: boundaryPoints,
+              showLine: true,
+              borderColor: '#ef4444',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: {
+                target: 'end',
+                above: 'rgba(239, 68, 68, 0.08)' // Quench zone highlighted
+              }
+            },
+            {
+              label: '15% Safety Margin Corridor',
+              data: boundaryPoints.map(p => ({ x: p.x * 0.85, y: p.y * 0.85 })),
+              showLine: true,
+              borderColor: '#f59e0b',
+              borderWidth: 1.5,
+              borderDash: [3, 3],
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: 'Live Hotspot Trajectory',
+              data: [
+                { x: 35.0, y: 1.20 }
+              ],
+              borderColor: '#06b6d4',
+              backgroundColor: '#06b6d4',
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              showLine: true,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Conductor Temperature T (Kelvin)',
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 10 }
+              },
+              min: 20,
+              max: 95,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono' } }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Magnetic Flux Density B (Tesla)',
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 10 }
+              },
+              min: 0,
+              max: 16,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono' } }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 9 }
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Temperature Time Series Chart
+      const tempCtx = document.getElementById('tempTimeSeriesChart').getContext('2d');
+      const timeLabels = Array.from({ length: 40 }, (_, i) => `${(i - 40) * 0.1}s`);
+      const nominalTSeries = Array(40).fill(35.0);
+      const critTSeries = Array(40).fill(68.0);
+
+      tempChart = new Chart(tempCtx, {
+        type: 'line',
+        data: {
+          labels: timeLabels,
+          datasets: [
+            {
+              label: 'Hotspot T (K)',
+              data: nominalTSeries,
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: true,
+              tension: 0.2
+            },
+            {
+              label: 'Critical Limit Tc(B)',
+              data: critTSeries,
+              borderColor: '#ef4444',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: { display: false },
+            y: {
+              min: 25,
+              max: 95,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 10, color: '#94a3b8', font: { family: 'JetBrains Mono', size: 9 } }
+            }
+          }
+        }
+      });
+
+      // 3. Shunt & Current Routing Time Series Chart
+      const shuntCtx = document.getElementById('shuntTimeSeriesChart').getContext('2d');
+      shuntChart = new Chart(shuntCtx, {
+        type: 'line',
+        data: {
+          labels: timeLabels,
+          datasets: [
+            {
+              label: 'HTS Core Current (A)',
+              data: Array(40).fill(4200),
+              borderColor: '#06b6d4',
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.2
+            },
+            {
+              label: 'Bypass Cu Shunt Current (A)',
+              data: Array(40).fill(0),
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: true,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: { display: false },
+            y: {
+              min: 0,
+              max: 6500,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 10, color: '#94a3b8', font: { family: 'JetBrains Mono', size: 9 } }
+            }
+          }
+        }
+      });
+    }
+
+    // --- 5. Real-Time Physics Tick & State Observer Loop ---
+    let tickCount = 0;
+    const trajectoryHistory = [];
+
+    function simulationStep() {
+      tickCount++;
+
+      // Natural cryogenic heat dissipation relaxation
+      if (state.hotspotIntensity > 0.05) {
+        state.hotspotIntensity *= 0.965; // exponential cooldown
+      } else {
+        state.hotspotIntensity = 0;
+      }
+
+      // External stray magnetic self-field + thruster field calculation
+      const selfField = (state.busCurrent / 4200) * 1.8; // Self-field ~ 1.8 T at rated 4.2 kA
+      const totalLocalB = state.bExternal + selfField;
+
+      // Local temperature calculation at hotspot
+      let peakT = state.tInlet + state.hotspotIntensity + (state.busCurrent / 6000) * 4.0;
+      if (state.vacuumLeakActive) {
+        peakT += 12.0; // Persistent thermal leak
+      }
+
+      // Critical temperature for current local B field
+      const currentTc = getCriticalTemp(totalLocalB);
+      const criticalI = getCriticalCurrent(peakT, totalLocalB);
+      const currentMargin = criticalI - state.busCurrent;
+
+      // Distance in (T, B) phase space from critical curve
+      const critFieldAtT = getCriticalField(peakT);
+      const distMargin = Math.sqrt(
+        Math.pow(Math.max(0, currentTc - peakT), 2) + 
+        Math.pow(Math.max(0, critFieldAtT - totalLocalB), 2)
+      );
+
+      // Autonomous Shunt Logic: If operating point encroaches the 15% safety corridor
+      const guardTriggerThreshold = 0.85 * currentTc;
+      const isApproachingQuench = (peakT >= guardTriggerThreshold) || (state.busCurrent > criticalI * 0.9);
+
+      if (isApproachingQuench && state.autoGuardArmed) {
+        // Fast GaN shunting kicks in proportional to threat
+        const severity = Math.min(1.0, (peakT - guardTriggerThreshold) / (currentTc - guardTriggerThreshold + 0.1));
+        state.shuntRatio = Math.min(1.0, state.shuntRatio + 0.25 * Math.max(0.2, severity));
+      } else {
+        // Smoothly recover back to superconducting transport
+        state.shuntRatio = Math.max(0.0, state.shuntRatio - 0.05);
+      }
+
+      // Compute currents
+      const iShunt = state.busCurrent * state.shuntRatio;
+      const iHTS = state.busCurrent - iShunt;
+
+      // Quench voltage generation
+      if (iHTS > criticalI && criticalI > 0) {
+        // Power-law E-field transition
+        const vDrop = 0.1 * Math.pow(iHTS / criticalI, 18);
+        state.vQuench = Math.min(999.0, vDrop);
+      } else {
+        state.vQuench = state.shuntRatio > 0.1 ? 0.04 * (iShunt / 1000) : 0.0;
+      }
+
+      state.quenched = (peakT >= currentTc && state.shuntRatio < 0.8);
+
+      // Render physical bus canvas
+      drawBusCanvas(peakT, totalLocalB, state.shuntRatio > 0.05);
+
+      // Update Heat Strip DOM
+      updateHeatStrip(peakT);
+
+      // Update HUD metrics
+      document.getElementById('hudCurrent').innerText = Math.round(state.busCurrent).toLocaleString();
+      document.getElementById('hudBField').innerText = totalLocalB.toFixed(2);
+      document.getElementById('hudMargin').innerText = (currentMargin > 0 ? '+' : '') + Math.round(currentMargin).toLocaleString();
+      document.getElementById('hudShuntPercent').innerText = (state.shuntRatio * 100).toFixed(1) + '%';
+
+      const shuntBadge = document.getElementById('hudShuntState');
+      if (state.shuntRatio > 0.85) {
+        shuntBadge.className = 'text-xs px-2 py-0.5 rounded bg-amber-950/90 text-amber-300 mono border border-amber-700 glow-amber';
+        shuntBadge.innerText = 'FULL BYPASS';
+      } else if (state.shuntRatio > 0.05) {
+        shuntBadge.className = 'text-xs px-2 py-0.5 rounded bg-cyan-950/90 text-cyan-300 mono border border-cyan-700';
+        shuntBadge.innerText = 'ACTIVE SHUNTING';
+      } else {
+        shuntBadge.className = 'text-xs px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 mono border border-emerald-800/80';
+        shuntBadge.innerText = 'STANDBY';
+      }
+
+      // Global Header status indicators
+      const globalBadge = document.getElementById('globalStateBadge');
+      if (state.quenched) {
+        globalBadge.innerText = 'CATASTROPHIC QUENCH';
+        globalBadge.className = 'text-rose-400 font-bold';
+      } else if (state.shuntRatio > 0.05) {
+        globalBadge.innerText = 'BYPASS GUARD ENGAGED';
+        globalBadge.className = 'text-amber-400 font-semibold';
+      } else {
+        globalBadge.innerText = 'SUPERCONDUCTING (ZERO RES)';
+        globalBadge.className = 'text-emerald-400 font-semibold';
+      }
+      document.getElementById('globalTBadge').innerText = peakT.toFixed(1) + ' K';
+      document.getElementById('marginDistanceVal').innerText = distMargin.toFixed(1) + ' K-T';
+      document.getElementById('vQuenchDisp').innerText = '$V_{\\text{quench}}$: ' + state.vQuench.toFixed(2) + ' mV';
+
+      // Throttled Chart Updates (every 3 ticks)
+      if (tickCount % 3 === 0) {
+        updateTelemetryCharts(peakT, totalLocalB, currentTc, iHTS, iShunt);
+      }
+    }
+
+    // Heat Strip DOM generator
+    function updateHeatStrip(peakT) {
+      const container = document.getElementById('heatStrip');
+      container.innerHTML = '';
+      const numCells = 24;
+      const hotspotIdx = 13; // around 2.15m
+
+      for (let c = 0; c < numCells; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'flex-1 h-full rounded-sm transition-all duration-300';
+        
+        let cellT = state.tInlet;
+        const dist = Math.abs(c - hotspotIdx);
+        if (dist <= 4) {
+          const factor = (4 - dist) / 4;
+          cellT += (peakT - state.tInlet) * factor;
+        }
+
+        // Color interpolation
+        if (cellT > 65) {
+          cell.style.backgroundColor = '#ef4444'; // Red hot
+        } else if (cellT > 48) {
+          cell.style.backgroundColor = '#f59e0b'; // Amber warning
+        } else if (cellT > 38) {
+          cell.style.backgroundColor = '#06b6d4'; // Active blue
+        } else {
+          cell.style.backgroundColor = '#1e3a8a'; // Deep cold cryogenic
+        }
+
+        container.appendChild(cell);
+      }
+
+      document.getElementById('fbgMaxDisp').innerText = `Peak: ${peakT.toFixed(1)} K @ x = 2.15m`;
+    }
+
+    function updateTelemetryCharts(peakT, peakB, currentTc, iHTS, iShunt) {
+      if (!phaseChart || !tempChart || !shuntChart) return;
+
+      // 1. Phase Chart Update
+      trajectoryHistory.push({ x: peakT, y: peakB });
+      if (trajectoryHistory.length > 15) trajectoryHistory.shift();
+
+      phaseChart.data.datasets[2].data = [...trajectoryHistory];
+      phaseChart.update('none');
+
+      // 2. Temp Time Series Update
+      tempChart.data.datasets[0].data.shift();
+      tempChart.data.datasets[0].data.push(peakT);
+
+      tempChart.data.datasets[1].data.shift();
+      tempChart.data.datasets[1].data.push(currentTc);
+      tempChart.update('none');
+
+      // 3. Shunt Current Time Series Update
+      shuntChart.data.datasets[0].data.shift();
+      shuntChart.data.datasets[0].data.push(iHTS);
+
+      shuntChart.data.datasets[1].data.shift();
+      shuntChart.data.datasets[1].data.push(iShunt);
+      shuntChart.update('none');
+    }
+
+    // --- 6. Initialization on Window Load ---
+    window.onload = function () {
+      lucide.createIcons();
+      resizeCanvas();
+      initCharts();
+      updateSimulationParams();
+
+      // Start physics loop
+      setInterval(simulationStep, 40); // 25 Hz simulation loop
+    };
+  </script>
+</body>
+</html>
